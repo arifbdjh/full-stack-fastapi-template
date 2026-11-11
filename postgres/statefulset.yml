@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: db
+  namespace: fastapi-lab
+spec:
+  serviceName: db
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fastapi-postgres
+  template:
+    metadata:
+      labels:
+        app: fastapi-postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:18
+        ports:
+        - containerPort: 5432
+        env:
+          - name: POSTGRES_DB
+            value: app
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: fastapi-db
+                key: POSTGRES_PASSWORD
+        volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql
+        readinessProbe:
+          exec:
+            command:
+              - pg_isready
+              - -U
+              - postgres
+              - -d
+              - app
+          periodSeconds: 10
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+      volumes:
+        - name: postgres-data
+          persistentVolumeClaim:
+            claimName: fastapi-postgres-pvc

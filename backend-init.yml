@@ -1,0 +1,28 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: backend-init-v1
+  namespace: fastapi-lab
+spec:
+  backoffLimit: 2
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: init
+          image: arifbdjh/fastapi-backend:v1
+          workingDir: /app/backend
+          command: ["bash", "scripts/prestart.sh"]
+          envFrom:
+            - secretRef:
+                name: fastapi-app
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: fastapi-db
+                  key: POSTGRES_PASSWORD
+            - name: DATABASE_URL
+              value: "postgresql://postgres:$(POSTGRES_PASSWORD)@db:5432/app"
+            - name: PROJECT_NAME
+              value: "FastAPI Lab"
